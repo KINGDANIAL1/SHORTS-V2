@@ -63,24 +63,29 @@ def get_drive_service():
     os.remove(tmp_path)
     return build('drive', 'v3', credentials=credentials)
 
-# الملفات التي تم نشرها
+# تحميل قائمة الفيديوهات التي تم نشرها مسبقًا
 def load_posted():
     if not os.path.exists(POSTED_LOG):
         return set()
     with open(POSTED_LOG, "r", encoding="utf-8") as f:
         return set(line.strip() for line in f.readlines())
 
+# حفظ اسم الفيديو بعد نشره
 def save_posted(filename):
     with open(POSTED_LOG, "a", encoding="utf-8") as f:
         f.write(filename + "\n")
 
-# جلب فيديوهات من Drive
+# جلب فيديوهات من Google Drive مرتبة من الأحدث للأقدم
 def get_videos_from_drive(service):
     query = "mimeType contains 'video/' and trashed = false"
-    results = service.files().list(q=query, fields="files(id, name)").execute()
+    results = service.files().list(
+        q=query,
+        orderBy="createdTime desc",
+        fields="files(id, name, createdTime)"
+    ).execute()
     return results.get("files", [])
 
-# تنزيل فيديو محليًا
+# تحميل الفيديو مؤقتًا من Drive
 def download_video(service, file):
     request = service.files().get_media(fileId=file['id'])
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
@@ -90,7 +95,7 @@ def download_video(service, file):
             _, done = downloader.next_chunk()
         return tmp.name
 
-# رفع الفيديو إلى يوتيوب
+# رفع الفيديو إلى YouTube
 def upload_video_to_youtube(youtube, file_path, title, description, tags=[]):
     body = {
         "snippet": {
@@ -109,21 +114,21 @@ def upload_video_to_youtube(youtube, file_path, title, description, tags=[]):
     response = request.execute()
     print(f"✅ تم النشر على يوتيوب: https://youtu.be/{response['id']}")
 
-# نشر فيديو واحد
+# نشر فيديو واحد من Google Drive إلى YouTube Shorts
 def publish_youtube_short(youtube, drive, file):
     tmp_path = download_video(drive, file)
     try:
         title = random.choice(TITLES)
         upload_video_to_youtube(youtube, tmp_path, title, DESCRIPTION, DEFAULT_HASHTAGS)
         save_posted(file['name'])
-        time.sleep(10)  # تأخير قبل الحذف للسماح لليوتيوب بتحليل الفيديو
+        time.sleep(10)  # مهلة ليتم المعالجة على يوتيوب
     except Exception as e:
         print(f"❌ فشل النشر: {e}")
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
-# المهمة المجدولة اليومية
+# المهام المجدولة
 def main():
     print("🔐 تسجيل الدخول إلى YouTube و Google Drive...")
     youtube = get_youtube_service()
@@ -134,18 +139,20 @@ def main():
         all_files = get_videos_from_drive(drive)
         available = [f for f in all_files if f['name'].endswith('.mp4') and f['name'] not in posted]
 
-        
         if not available:
             print("🚫 لا توجد فيديوهات جديدة")
             return
-        random.shuffle(available)
+
+        # اختر أول فيديو (الأحدث)
         publish_youtube_short(youtube, drive, available[0])
 
+    # جدولة النشر
     schedule.every().day.at("10:00").do(job)
     schedule.every().day.at("14:00").do(job)
     schedule.every().day.at("18:00").do(job)
     schedule.every().day.at("21:00").do(job)
     schedule.every().day.at("21:55").do(job)
+
     print("⏰ السكربت يعمل تلقائيًا...")
     try:
         while True:
