@@ -145,8 +145,8 @@ def main():
     schedule.every().day.at("14:00").do(job)
     schedule.every().day.at("18:00").do(job)
     schedule.every().day.at("21:00").do(job)
-    schedule.every().day.at("21:47").do(job)
-    schedule.every().day.at("21:55").do(job)
+    
+    
     print("⏰ السكربت يعمل تلقائيًا...")
     try:
         while True:
