@@ -97,9 +97,18 @@ def get_random_thumbnail():
 
 def set_thumbnail(youtube, video_id, thumbnail_path):
     try:
+        ext = os.path.splitext(thumbnail_path)[1].lower()
+        if ext in ['.jpg', '.jpeg']:
+            mimetype = 'image/jpeg'
+        elif ext == '.png':
+            mimetype = 'image/png'
+        else:
+            print(f"❌ نوع الصورة غير مدعوم: {thumbnail_path}")
+            return
+
         youtube.thumbnails().set(
             videoId=video_id,
-            media_body=MediaIoBaseUpload(open(thumbnail_path, 'rb'), mimetype="image/*")
+            media_body=MediaIoBaseUpload(open(thumbnail_path, 'rb'), mimetype=mimetype)
         ).execute()
         print(f"✅ تم رفع Thumbnail: {thumbnail_path}")
     except Exception as e:
@@ -170,7 +179,7 @@ def main():
 
     # نشر الفيديو مرتين يوميًا
     schedule.every().day.at("11:00").do(job)
-    schedule.every().day.at("17:10").do(job)
+    schedule.every().day.at("17:27").do(job)
 
     print("⏰ السكربت يعمل تلقائيًا...")
     try:
