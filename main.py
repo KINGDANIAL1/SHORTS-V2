@@ -170,7 +170,7 @@ def main():
 
     # نشر الفيديو مرتين يوميًا
     schedule.every().day.at("11:00").do(job)
-    schedule.every().day.at("17:40").do(job)
+    schedule.every().day.at("17:10").do(job)
 
     print("⏰ السكربت يعمل تلقائيًا...")
     try:
