@@ -178,8 +178,8 @@ def main():
         publish_youtube_short(youtube, drive, available[0])
 
     # نشر الفيديو مرتين يوميًا
-    schedule.every().day.at("12:00").do(job)
-    schedule.every().day.at("19:00").do(job)
+    schedule.every().day.at("08:00").do(job)
+    schedule.every().day.at("18:00").do(job)
 
     print("⏰ السكربت يعمل تلقائيًا...")
     try:
